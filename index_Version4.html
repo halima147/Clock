@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cash App Bitcoin Testnet Demo</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        cashapp: '#00D632',
+                        bitcoin: '#F7931A',
+                        incoming: '#00D632',
+                        outgoing: '#FF375F'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .transaction-card {
+            transition: all 0.3s ease;
+            border-left: 4px solid transparent;
+        }
+        .transaction-card.incoming {
+            border-left-color: #00D632;
+        }
+        .transaction-card.outgoing {
+            border-left-color: #FF375F;
+        }
+        .transaction-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+        }
+        .cashapp-gradient {
+            background: linear-gradient(135deg, #00D632 0%, #00B32A 100%);
+        }
+        .bitcoin-gradient {
+            background: linear-gradient(135deg, #F7931A 0%, #FFB347 100%);
+        }
+        .tab-button {
+            transition: all 0.3s ease;
+        }
+        .tab-button.active {
+            background-color: #00D632;
+            color: white;
+        }
+        .currency-switch {
+            background-color: #F1F3F4;
+            border-radius: 20px;
+            padding: 2px;
+        }
+        .currency-option {
+            padding: 8px 16px;
+            border-radius: 18px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .currency-option.active {
+            background-color: white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        #receiptPrintArea {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- Header -->
+    <header class="bg-white shadow-sm">
+        <div class="container mx-auto px-4 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <div class="w-8 h-8 bg-cashapp rounded flex items-center justify-center">
+                        <span class="text-white font-bold text-lg">$</span>
+                    </div>
+                    <h1 class="text-xl font-bold text-gray-800">Cash App Bitcoin Testnet Demo</h1>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <button onclick="resetApp()" class="bg-gray-200 text-gray-700 px-3 py-1 rounded-lg hover:bg-gray-300 transition-colors text-sm">
+                        <i class="fas fa-redo mr-1"></i>Reset
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Demo Prompt -->
+    <div class="container mx-auto px-4 mt-6">
+        <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded-lg mb-6">
+            <h2 class="font-bold mb-2 text-lg text-yellow-800">Demo Instructions</h2>
+            <ul class="list-disc ml-5 text-sm text-yellow-800">
+                <li>Initial Balance: <b>$70,000</b> in Bitcoin (Testnet)</li>
+                <li>Send/receive Bitcoin to testnet wallet addresses</li>
+                <li>Autogenerate transaction receipts after each transaction</li>
+                <li>Outgoing payments trigger Gmail notification to recipient email</li>
+                <li>View transaction history and recent activity</li>
+                <li>All transactions are simulated, for testing purposes only</li>
+            </ul>
+            <div class="mt-2 text-xs text-yellow-700">
+                <b>Note:</b> This is a testnet demo. No real funds are moved. Use any testnet Bitcoin wallet address for experiments.
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <main class="container mx-auto px-4 py-2">
+        <!-- Balance Card -->
+        <div class="cashapp-gradient rounded-2xl p-6 text-white mb-8">
+            <div class="flex justify-between items-start mb-4">
+                <div>
+                    <p class="text-sm opacity-90">Total Balance</p>
+                    <h2 class="text-3xl font-bold" id="totalBalance">$70,000.00</h2>
+                </div>
+                <div class="text-right">
+                    <p class="text-sm opacity-90">Bitcoin Balance</p>
+                    <h3 class="text-xl font-semibold" id="btcBalance">1.75000000 BTC</h3>
+                </div>
+            </div>
+            <div class="flex space-x-3">
+                <button onclick="showSendModal()" class="flex-1 bg-white text-cashapp py-3 px-4 rounded-xl font-semibold hover:bg-gray-50 transition-colors">
+                    <i class="fas fa-paper-plane mr-2"></i>Send
+                </button>
+                <button onclick="showReceiveModal()" class="flex-1 bg-white text-cashapp py-3 px-4 rounded-xl font-semibold hover:bg-gray-50 transition-colors">
+                    <i class="fas fa-download mr-2"></i>Receive
+                </button>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Left Column -->
+            <div class="lg:col-span-1">
+                <!-- Quick Stats -->
+                <div class="bg-white rounded-2xl shadow-sm p-6 mb-6">
+                    <h2 class="text-lg font-semibold text-gray-800 mb-4">Wallet Stats</h2>
+                    <div class="space-y-4">
+                        <div class="flex justify-between items-center">
+                            <span class="text-gray-600">Bitcoin Price</span>
+                            <span class="font-semibold" id="btcPrice">$40,000.00</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-gray-600">Total Transactions</span>
+                            <span id="totalTransactions" class="font-semibold">0</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-incoming">Received</span>
+                            <span id="receivedCount" class="font-semibold">0</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-outgoing">Sent</span>
+                            <span id="sentCount" class="font-semibold">0</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Activity -->
+                <div class="bg-white rounded-2xl shadow-sm p-6">
+                    <h2 class="text-lg font-semibold text-gray-800 mb-4">Recent Activity</h2>
+                    <div id="recentActivity" class="space-y-3">
+                        <div class="text-center py-8 text-gray-400">
+                            <i class="fas fa-exchange-alt text-2xl mb-2"></i>
+                            <p class="text-sm">No recent activity</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Transaction History -->
+            <div class="lg:col-span-2">
+                <div class="bg-white rounded-2xl shadow-sm p-6">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-lg font-semibold text-gray-800">Transaction History</h2>
+                        <select id="filterType" class="px-3 py-2 border rounded-lg text-sm">
+                            <option value="all">All Transactions</option>
+                            <option value="incoming">Received</option>
+                            <option value="outgoing">Sent</option>
+                        </select>
+                    </div>
+
+                    <div id="transactionList" class="space-y-3">
+                        <div class="text-center py-12 text-gray-400">
+                            <i class="fas fa-list-alt text-3xl mb-4"></i>
+                            <p class="text-gray-500">No transactions yet</p>
+                            <p class="text-sm text-gray-400">Send or receive Bitcoin to see transactions</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Send Modal -->
+    <div id="sendModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
+        <div class="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white rounded-2xl p-6 w-96 max-w-90vw">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-lg font-semibold">Send Bitcoin</h3>
+                <button onclick="hideSendModal()" class="text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Recipient Type</label>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button id="cashAppRecipient" class="tab-button active py-2 px-4 rounded-lg bg-cashapp text-white text-sm" onclick="switchRecipientType('cashapp')">
+                            Cash App
+                        </button>
+                        <button id="bitcoinRecipient" class="tab-button py-2 px-4 rounded-lg bg-gray-200 text-gray-700 text-sm" onclick="switchRecipientType('bitcoin')">
+                            Bitcoin Wallet
+                        </button>
+                    </div>
+                </div>
+
+                <div id="cashAppFields">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Cash App Tag</label>
+                        <input type="text" id="cashAppTag" placeholder="$username"
+                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cashapp focus:border-transparent">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2 mt-2">Recipient Gmail (for notification)</label>
+                        <input type="email" id="recipientGmail" placeholder="recipient@gmail.com"
+                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cashapp focus:border-transparent">
+                    </div>
+                </div>
+
+                <div id="bitcoinFields" class="hidden">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Bitcoin Address</label>
+                        <input type="text" id="bitcoinAddress" placeholder="tb1q..."
+                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cashapp focus:border-transparent font-mono text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2 mt-2">Recipient Gmail (for notification)</label>
+                        <input type="email" id="recipientGmailBTC" placeholder="recipient@gmail.com"
+                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cashapp focus:border-transparent">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Amount</label>
+                    <div class="currency-switch flex mb-2">
+                        <div id="usdOption" class="currency-option active" onclick="switchCurrency('usd')">USD</div>
+                        <div id="btcOption" class="currency-option" onclick="switchCurrency('btc')">BTC</div>
+                    </div>
+                    <input type="number" id="sendAmount" placeholder="0.00"
+                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cashapp focus:border-transparent text-lg" oninput="updateConversionText()">
+                    <div class="text-sm text-gray-500 mt-1" id="conversionText">
+                        ≈ 0.00000000 BTC
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Note (Optional)</label>
+                    <input type="text" id="sendNote" placeholder="What's this for?"
+                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cashapp focus:border-transparent">
+                </div>
+
+                <button onclick="sendBitcoin()" class="w-full bg-cashapp text-white py-3 px-4 rounded-lg hover:bg-green-600 transition-colors font-semibold">
+                    Send Bitcoin
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Receive Modal -->
+    <div id="receiveModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
+        <div class="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white rounded-2xl p-6 w-96 max-w-90vw">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-lg font-semibold">Receive Bitcoin</h3>
+                <button onclick="hideReceiveModal()" class="text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="space-y-4 text-center">
+                <div class="w-48 h-48 mx-auto bg-white p-4 rounded-xl border">
+                    <img src="https://placehold.co/192x192" alt="Cash App Bitcoin QR code for receiving payments - square QR code with white background and black patterns" class="w-full h-full" />
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Your Cash App</label>
+                    <p class="text-gray-500 font-mono">$yourcashtag</p>
+                </div>
+                <button onclick="receiveBitcoin()" class="w-full bg-bitcoin text-white py-3 px-4 rounded-lg hover:bg-orange-600 transition-colors font-semibold">
+                    Confirm Receive
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Transaction Receipt Modal -->
+    <div id="receiptModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
+        <div class="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white rounded-2xl p-6 w-96 max-w-90vw">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-semibold">Transaction Receipt</h3>
+                <button onclick="hideReceiptModal()" class="text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div id="receiptDetails" class="space-y-2"></div>
+            <button onclick="printReceipt()" class="w-full bg-cashapp text-white py-2 mt-4 rounded-lg">Print Receipt</button>
+        </div>
+        <div id="receiptPrintArea" style="display:none;"></div>
+    </div>
+    <script>
+        let transactions = [];
+        let btcPrice = 40000; // Demo price
+
+        function resetApp() {
+            transactions = [];
+            document.getElementById('transactionList').innerHTML = `
+                <div class="text-center py-12 text-gray-400">
+                    <i class="fas fa-list-alt text-3xl mb-4"></i>
+                    <p class="text-gray-500">No transactions yet</p>
+                    <p class="text-sm text-gray-400">Send or receive Bitcoin to see transactions</p>
+                </div>`;
+            document.getElementById('recentActivity').innerHTML = `
+                <div class="text-center py-8 text-gray-400">
+                    <i class="fas fa-exchange-alt text-2xl mb-2"></i>
+                    <p class="text-sm">No recent activity</p>
+                </div>`;
+            document.getElementById('totalTransactions').textContent = "0";
+            document.getElementById('receivedCount').textContent = "0";
+            document.getElementById('sentCount').textContent = "0";
+            document.getElementById('totalBalance').textContent = "$70,000.00";
+            document.getElementById('btcBalance').textContent = "1.75000000 BTC";
+        }
+
+        function showSendModal() {
+            document.getElementById('sendModal').classList.remove('hidden');
+        }
+        function hideSendModal() {
+            document.getElementById('sendModal').classList.add('hidden');
+        }
+        function showReceiveModal() {
+            document.getElementById('receiveModal').classList.remove('hidden');
+        }
+        function hideReceiveModal() {
+            document.getElementById('receiveModal').classList.add('hidden');
+        }
+        function hideReceiptModal() {
+            document.getElementById('receiptModal').classList.add('hidden');
+        }
+
+        function switchRecipientType(type) {
+            if(type === 'cashapp') {
+                document.getElementById('cashAppRecipient').classList.add('active','bg-cashapp','text-white');
+                document.getElementById('bitcoinRecipient').classList.remove('active','bg-cashapp','text-white');
+                document.getElementById('bitcoinRecipient').classList.add('bg-gray-200','text-gray-700');
+                document.getElementById('cashAppFields').classList.remove('hidden');
+                document.getElementById('bitcoinFields').classList.add('hidden');
+            } else {
+                document.getElementById('bitcoinRecipient').classList.add('active','bg-cashapp','text-white');
+                document.getElementById('cashAppRecipient').classList.remove('active','bg-cashapp','text-white');
+                document.getElementById('cashAppRecipient').classList.add('bg-gray-200','text-gray-700');
+                document.getElementById('bitcoinFields').classList.remove('hidden');
+                document.getElementById('cashAppFields').classList.add('hidden');
+            }
+        }
+
+        let currentCurrency = 'usd';
+        function switchCurrency(currency) {
+            currentCurrency = currency;
+            if(currency === 'usd') {
+                document.getElementById('usdOption').classList.add('active');
+                document.getElementById('btcOption').classList.remove('active');
+            } else {
+                document.getElementById('btcOption').classList.add('active');
+                document.getElementById('usdOption').classList.remove('active');
+            }
+            updateConversionText();
+        }
+
+        function updateConversionText() {
+            let amount = parseFloat(document.getElementById('sendAmount').value) || 0;
+            let text = '';
+            if(currentCurrency === 'usd') {
+                let btc = amount / btcPrice;
+                text = `≈ ${btc.toFixed(8)} BTC`;
+            } else {
+                let usd = amount * btcPrice;
+                text = `≈ $${usd.toFixed(2)}`;
+            }
+            document.getElementById('conversionText').textContent = text;
+        }
+
+        function generateTxId() {
+            return 'TX' + Math.floor(Math.random() * 10000000).toString().padStart(7,'0');
+        }
+
+        function sendBitcoin() {
+            let amount = parseFloat(document.getElementById('sendAmount').value) || 0;
+            let currency = currentCurrency.toUpperCase();
+            let recipientType = document.getElementById('cashAppFields').classList.contains('hidden') ? 'Bitcoin Wallet' : 'Cash App';
+            let recipient, recipientGmail;
+            if(recipientType === 'Cash App') {
+                recipient = document.getElementById('cashAppTag').value;
+                recipientGmail = document.getElementById('recipientGmail').value;
+            } else {
+                recipient = document.getElementById('bitcoinAddress').value;
+                recipientGmail = document.getElementById('recipientGmailBTC').value;
+            }
+            let note = document.getElementById('sendNote').value;
+            let btcAmount = currency === 'USD' ? amount / btcPrice : amount;
+            let usdAmount = currency === 'BTC' ? amount * btcPrice : amount;
+            let tx = {
+                id: generateTxId(),
+                type: "Sent",
+                date: new Date().toLocaleString(),
+                recipientType,
+                recipient,
+                recipientGmail,
+                currency,
+                amount: amount,
+                btcAmount: btcAmount,
+                usdAmount: usdAmount,
+                note
+            };
+            transactions.push(tx);
+            updateUI();
+            hideSendModal();
+            showReceiptModal(tx);
+            sendGmailNotification(tx);
+        }
+
+        function receiveBitcoin() {
+            let tx = {
+                id: generateTxId(),
+                type: "Received",
+                date: new Date().toLocaleString(),
+                recipientType: "Cash App",
+                recipient: "$yourcashtag",
+                recipientGmail: "",
+                currency: "BTC",
+                amount: 0.01, // Demo amount
+                btcAmount: 0.01,
+                usdAmount: 0.01 * btcPrice,
+                note: "Demo receive"
+            };
+            transactions.push(tx);
+            updateUI();
+            hideReceiveModal();
+            showReceiptModal(tx);
+        }
+
+        function updateUI() {
+            // Transaction History
+            if (transactions.length === 0) {
+                document.getElementById('transactionList').innerHTML = `
+                    <div class="text-center py-12 text-gray-400">
+                        <i class="fas fa-list-alt text-3xl mb-4"></i>
+                        <p class="text-gray-500">No transactions yet</p>
+                        <p class="text-sm text-gray-400">Send or receive Bitcoin to see transactions</p>
+                    </div>`;
+            } else {
+                let txHtml = '';
+                let filterType = document.getElementById('filterType').value;
+                let filteredTx = transactions.filter(tx => filterType === 'all' || (filterType === 'incoming' && tx.type === 'Received') || (filterType === 'outgoing' && tx.type === 'Sent'));
+                if(filteredTx.length === 0) {
+                    txHtml = `<div class="text-center py-8 text-gray-400">No transactions for selected filter</div>`;
+                } else {
+                    filteredTx.forEach(tx => {
+                        txHtml += `
+                        <div class="transaction-card ${tx.type === 'Received' ? 'incoming' : 'outgoing'} bg-gray-50 p-4 rounded-xl flex items-center justify-between shadow-sm">
+                            <div>
+                                <div class="font-semibold">${tx.type} ${tx.currency === 'USD' ? '$'+tx.amount : tx.btcAmount+' BTC'}</div>
+                                <div class="text-xs text-gray-500">${tx.date}</div>
+                                <div class="text-xs">${tx.recipientType}: <span class="font-mono">${tx.recipient}</span></div>
+                                <div class="text-xs text-gray-400">${tx.note || ''}</div>
+                            </div>
+                            <div>
+                                <span class="${tx.type === 'Received' ? 'text-incoming' : 'text-outgoing'} font-bold">${tx.type === 'Received' ? '+' : '-'}${tx.currency === 'USD' ? '$'+tx.usdAmount.toFixed(2) : tx.btcAmount.toFixed(8)+' BTC'}</span>
+                            </div>
+                        </div>`;
+                    });
+                }
+                document.getElementById('transactionList').innerHTML = txHtml;
+            }
+            document.getElementById('totalTransactions').textContent = transactions.length;
+            document.getElementById('receivedCount').textContent = transactions.filter(tx=>tx.type==='Received').length;
+            document.getElementById('sentCount').textContent = transactions.filter(tx=>tx.type==='Sent').length;
+            if(transactions.length > 0) {
+                let recentTx = transactions.slice(-3).reverse();
+                let html = '';
+                recentTx.forEach(tx => {
+                    html += `<div class="transaction-card ${tx.type === 'Received' ? 'incoming' : 'outgoing'} p-3 rounded-lg flex items-center space-x-3">
+                        <i class="fas ${tx.type === 'Received' ? 'fa-download text-incoming' : 'fa-paper-plane text-outgoing'}"></i>
+                        <div>
+                            <div class="text-sm">${tx.type} ${tx.currency === 'USD' ? '$'+tx.amount : tx.btcAmount+' BTC'}</div>
+                            <div class="text-xs text-gray-400">${tx.date}</div>
+                        </div>
+                    </div>`;
+                });
+                document.getElementById('recentActivity').innerHTML = html;
+            }
+            // Update balances
+            let sentTotal = transactions.filter(tx=>tx.type==='Sent').reduce((sum,tx)=>sum+(tx.usdAmount||0),0);
+            let receivedTotal = transactions.filter(tx=>tx.type==='Received').reduce((sum,tx)=>sum+(tx.usdAmount||0),0);
+            let balance = 70000 - sentTotal + receivedTotal;
+            let btcBalance = balance / btcPrice;
+            document.getElementById('totalBalance').textContent = '$' + balance.toFixed(2);
+            document.getElementById('btcBalance').textContent = btcBalance.toFixed(8) + ' BTC';
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('filterType').addEventListener('change', updateUI);
+            resetApp();
+        });
+
+        function showReceiptModal(transaction) {
+            const receiptModal = document.getElementById('receiptModal');
+            const receiptDetails = document.getElementById('receiptDetails');
+            receiptDetails.innerHTML = `
+                <div><strong>Transaction ID:</strong> ${transaction.id}</div>
+                <div><strong>Date:</strong> ${transaction.date}</div>
+                <div><strong>Type:</strong> ${transaction.type}</div>
+                <div><strong>Recipient Type:</strong> ${transaction.recipientType}</div>
+                <div><strong>Recipient:</strong> <span class="font-mono">${transaction.recipient}</span></div>
+                ${transaction.recipientGmail ? `<div><strong>Recipient Gmail:</strong> ${transaction.recipientGmail}</div>` : ""}
+                <div><strong>Amount:</strong> ${transaction.currency === 'USD' ? '$'+transaction.amount : transaction.btcAmount+' BTC'} (${transaction.currency === 'USD' ? transaction.btcAmount.toFixed(8)+' BTC' : '$'+transaction.usdAmount.toFixed(2)})</div>
+                <div><strong>Note:</strong> ${transaction.note || '-'}</div>
+            `;
+            receiptModal.classList.remove('hidden');
+            document.getElementById('receiptPrintArea').innerHTML = `
+                <h2>Transaction Receipt</h2>
+                <hr>
+                <div><strong>Transaction ID:</strong> ${transaction.id}</div>
+                <div><strong>Date:</strong> ${transaction.date}</div>
+                <div><strong>Type:</strong> ${transaction.type}</div>
+                <div><strong>Recipient Type:</strong> ${transaction.recipientType}</div>
+                <div><strong>Recipient:</strong> ${transaction.recipient}</div>
+                ${transaction.recipientGmail ? `<div><strong>Recipient Gmail:</strong> ${transaction.recipientGmail}</div>` : ""}
+                <div><strong>Amount:</strong> ${transaction.currency === 'USD' ? '$'+transaction.amount : transaction.btcAmount+' BTC'} (${transaction.currency === 'USD' ? transaction.btcAmount.toFixed(8)+' BTC' : '$'+transaction.usdAmount.toFixed(2)})</div>
+                <div><strong>Note:</strong> ${transaction.note || '-'}</div>
+            `;
+        }
+
+        function printReceipt() {
+            const printContents = document.getElementById('receiptPrintArea').innerHTML;
+            const win = window.open('', '', 'width=600,height=400');
+            win.document.write('<html><head><title>Transaction Receipt</title></head><body>');
+            win.document.write(printContents);
+            win.document.write('</body></html>');
+            win.document.close();
+            win.focus();
+            win.print();
+            win.close();
+        }
+
+        // Simulated Gmail notification
+        function sendGmailNotification(tx) {
+            if(tx.type !== "Sent" || !tx.recipientGmail) return;
+            alert(
+                `Gmail notification sent!\n\nTo: ${tx.recipientGmail}\n\nSubject: Bitcoin Payment Received\n\nBody:\nDear user,\nYou have received a Bitcoin payment of ${tx.currency === 'USD' ? '$'+tx.amount : tx.btcAmount+' BTC'} from Cash App. Transaction ID: ${tx.id}\n\nThank you.`
+            );
+        }
+    </script>
+</body>
+</html>
